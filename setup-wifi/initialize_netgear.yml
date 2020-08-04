@@ -1,0 +1,36 @@
+#!/bin/sh
+#
+# Steps to make Netgear USB Wireless 6100 Driver for Ubuntu
+# After trying 2 other sets of instructions, this one worked
+# Thread: https://askubuntu.com/questions/1027094/netgear-a6100-ac600-wifi-adapter-driver
+# Credit goes to https://askubuntu.com/users/19421/chili555
+#
+# You may run into the WiFi not running after restarts
+# Checkout startNM.sh to remedy that
+#
+# TODO: needs to be ansiblized
+
+#If previous drivers are installed you need to uninstall them
+#Location may differ
+cd ~/Downloads/rtl8812AU
+sudo make uninstall
+cd ..
+rm -rf rtl8812AU
+
+#Now to install correct driver
+sudo apt update
+sudo apt install git
+git clone https://github.com/abperiasamy/rtl8812AU_8821AU_linux.git
+cd rtl8812AU_8821AU_linux
+make
+sudo make install
+
+#Validate new driver is loaded
+#One "alias" line should return, i.e. "alias:          usb:v0846p9052d*dc*dsc*dp*ic*isc*ip*in*"
+modinfo rtl8812au.ko | grep 9052
+
+#reboot
+#sudo restart
+
+
+
