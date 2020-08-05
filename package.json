@@ -1,0 +1,24 @@
+{
+  "name": "linux-setup",
+  "version": "0.0.1",
+  "description": "Documenting steps to setup home linux machine for easy setup of other machines and rebuilds.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bfay/linux-setup.git"
+  },
+  "keywords": [
+    "linux",
+    "automation",
+    "infra-as-code"
+  ],
+  "author": "Brannon Fay",
+  "license": "MIT",
+  "licenseurl": "https://github.com/beegisfay/linux-setup/blob/master/LICENSE",
+  "bugs": {
+    "url": "https://github.com/bfay/linux-setup/issues"
+  },
+  "homepage": "https://github.com/bfay/linux-setup#readme",
+  "twitter": "beegisfay",
+  "github": "beegisfay",
+  "linkedin": "brannonfay"
+}
