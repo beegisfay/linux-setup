@@ -67,4 +67,4 @@
 
   - name: 'Enable UFW'
     ufw:
-      state: enable
+      state: enabled
