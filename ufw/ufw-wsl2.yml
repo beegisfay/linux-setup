@@ -1,0 +1,70 @@
+---
+# file: ufw-wls2.yml
+#
+# Description: Setup Firewall (UFW) on WLS2 Ubuntu 20.04
+# 
+#
+- hosts: localhost      
+  tasks:
+  - name: Shutdown UFW
+    ufw:
+      state: disabled
+
+  - name: Reset UFW
+    ufw:
+      state: reset
+
+  - name: Setup TCP-22
+    ufw:
+      rule: allow
+      port: '22'
+      proto: tcp
+
+  - name: Setup TCP-443
+    ufw:
+      rule: allow
+      port: '443'
+      proto: tcp
+
+  - name: Setup TCP-80
+    ufw:
+      rule: allow
+      port: '80'
+      proto: tcp
+
+  - name: Setup TCP-8001
+    ufw:
+      rule: allow
+      port: '8001'
+      proto: tcp
+
+  - name: Setup 
+    ufw:
+      rule: allow
+      src: 192.168.1.0/24
+
+  - name: 'Setup DNS 53 TCP'
+    ufw:
+      rule: allow
+      port: '53'
+      proto: tcp
+
+  - name: 'Setup DNS 53 UDP'
+    ufw:
+      rule: allow
+      port: '53'
+      proto: udp
+
+  - name: 'Deny All Incoming'
+    ufw:
+      rule: deny
+      direction: in
+
+  - name: 'Allow All Outgoing'
+    ufw:
+      rule: allow
+      direction: out 
+
+  - name: 'Enable UFW'
+    ufw:
+      state: enable
