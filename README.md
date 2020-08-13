@@ -1,6 +1,6 @@
 <h1 align="center">Welcome to linux-setup 👋</h1>
 <p>
-  <img alt="Version" src="https://img.shields.io/badge/version-0.0.1-blue.svg?cacheSeconds=2592000" />
+  <img alt="Version" src="https://img.shields.io/badge/version-0.0.2-blue.svg?cacheSeconds=2592000" />
   <a href="https://github.com/bfay/linux-setup#readme" target="_blank">
     <img alt="Documentation" src="https://img.shields.io/badge/documentation-yes-brightgreen.svg" />
   </a>
@@ -29,7 +29,6 @@ npm install
 
 👤 **Brannon Fay**
 
-* Website: Brannon Fay
 * Twitter: [@beegisfay](https://twitter.com/beegisfay)
 * Github: [@beegisfay](https://github.com/beegisfay)
 * LinkedIn: [@brannonfay](https://linkedin.com/in/brannonfay)
