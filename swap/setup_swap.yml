@@ -31,8 +31,8 @@
       current_swap_size_num: "{{ result.stdout | regex_search( '\\D', '\\1' ) }}"
       failed_when: "current_swap_size_num >= {{ new_swap }}"
 
-    - debug: 
-      var: current_swap_size_num 
+    - debug:
+      var: current_swap_size_num
 
     - name: Allocate amount needed to get to <new_swap>G
       shell: "fallocate -l {{ new_swap }}G /swapfile"
@@ -46,7 +46,7 @@
       shell: mkswap /swapfile
       register: mkswap_output
 
-    - name: Turn new swapfile on as swap  
+    - name: Turn new swapfile on as swap
       shell: swapon /swapfile
       register: swapon_output
 
@@ -64,7 +64,7 @@
     - name: Confirm Current Swapiness in Persistent File
       shell: "cat /proc/sys/vm/swappiness"
       register: current_swappiness
-      
+
     - debug:
       var: current_swappiness
 
@@ -89,7 +89,7 @@
       shell: "echo vm.swappiness={{ new_swappiness }} >> /etc/sysctl.conf"
       #when: swappiness_line_found == 0
       register: new_sysctl_updated
-    
+
     #TODO: Comment out existing vm.swappiness if exists
 
     - name: Confirm new Swap value is set and if old swap is still present
@@ -111,7 +111,7 @@
     - name: Confirm everything is moved and old swap is no longer active
       shell: swapon --show
       register: final_swap_check
-    
+
     - debug:
       var: final_swap_check
 
