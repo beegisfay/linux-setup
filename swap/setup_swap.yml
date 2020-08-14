@@ -8,10 +8,9 @@
 # TODO: Convert to Ansible
 #
 - hosts: localhost
-
-- variables:
-  new_swap: "8"
-  new_swappiness: "75"
+  vars:
+  new_swap: "1"
+  new_swappiness: "50"
 
 - name: Setup additional swap space
   block:
@@ -124,4 +123,3 @@
         msg: 'An error occurred on the last step.  Review and address incomplete status of new Swap file.'
   become: true
   become_method: sudo
-
