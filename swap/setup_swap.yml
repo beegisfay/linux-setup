@@ -1,0 +1,127 @@
+---
+#
+#
+# Name: Setup Swap
+# Desc: How to increase swap on Small Systems
+# Author: Brannon Fay
+#
+# TODO: Convert to Ansible
+#
+- hosts: localhost
+
+- variables:
+  new_swap: "8"
+  new_swappiness: "75"
+
+- name: Setup additional swap space
+  block:
+  - tasks:
+    - name: Check current swap size and see if there is a need to proceed
+      shell: "swapon --show=SIZE --noheadings"
+      register: current_swap_size
+
+    # This needs to be done before the new swapfile is created 
+    # Or this code needs to be updated to filter it out
+    - name: Get current swap file name
+      shell: "swapon --show=SIZE --noheadings"
+      register: current_swapfile_name
+
+    - name: Set var for numeric value of current swap and fail if already <new_swap>+G
+    - set_fact:
+      current_swap_size_num: "{{ result.stdout | regex_search( '\\D', '\\1' ) }}"
+      failed_when: "current_swap_size_num >= {{ new_swap }}"
+
+    - debug: 
+      var: current_swap_size_num 
+
+    - name: Allocate amount needed to get to <new_swap>G
+      shell: "fallocate -l {{ new_swap }}G /swapfile"
+      register: fallocate_output
+
+    - name: Set Permissions for new Swap File
+      shell: chmod 600 /swapfile
+      register: chmod_output
+
+    - name: Turn new swapfile into a Swap Area
+      shell: mkswap /swapfile
+      register: mkswap_output
+
+    - name: Turn new swapfile on as swap  
+      shell: swapon /swapfile
+      register: swapon_output
+
+    - name: Put new swapfile in fstab for permanence
+      shell: "echo '/swapfile swap swap defaults 0 0' > /etc/fstab"
+      register: fstab_output
+
+    - name: Confirm in new swapfile size
+      shell: swapon --show
+      register: new_swapfile_confirm
+
+    - debug:
+      var: new_swapfile_confirm.stdout
+
+    - name: Confirm Current Swapiness in Persistent File
+      shell: "cat /proc/sys/vm/swappiness"
+      register: current_swappiness
+      
+    - debug:
+      var: current_swappiness
+
+    - name: Determine what type of swapiness file format is on this system
+      shell: "grep 'swappiness' /proc/sys/vm/swappiness | wc -l"
+      register: swappiness_line_found
+      failed_when: "swappiness_line_found > 1"
+
+    - debug:
+      var: current_swappiness
+
+    #Found this to cause my machine with 4G to become sluggish quickly (33%) and changed to go the other way (75%)
+    - name: Update swappiness if not equal
+      shell: sysctl vm.swappiness={{ new_swappiness }}
+      when: not current_swappiness == new_swappiness
+
+    - Name: Determine if swappiness line exists in /etc/sysctl.conf
+      shell: "grep swappiness /etc/sysctl.conf | cut -d'=' -f2"
+      register: current_swappiness
+
+    - name: Add new Swapiness to End of /etc/sysctl.conf
+      shell: "echo vm.swappiness={{ new_swappiness }} >> /etc/sysctl.conf"
+      #when: swappiness_line_found == 0
+      register: new_sysctl_updated
+    
+    #TODO: Comment out existing vm.swappiness if exists
+
+    - name: Confirm new Swap value is set and if old swap is still present
+      shell: swapon --show
+      register: both_swaps_on
+
+    - debug:
+      var: both_swaps_on
+
+    # Make take time to move current stuff out of swap to new swapfile
+    - name: Turn off old swap
+      shell: "swapoff -v {{ current_swapfile_name }}"
+      register: swapoff_status
+
+    - name: Remove old swap mount from permanent/boot resilience
+      shell: "cat /etc/fstab | grep -v {{ current_swapfile_name }} >! /etc/fstab"
+      register: fstab_update
+
+    - name: Confirm everything is moved and old swap is no longer active
+      shell: swapon --show
+      register: final_swap_check
+    
+    - debug:
+      var: final_swap_check
+
+    - name: Remove old swap mount
+      shell: "rm {{ current_swapfile_name }}"
+      register: remove_old_swap
+  - rescue:
+    - name: announce error
+      debug:
+        msg: 'An error occurred on the last step.  Review and address incomplete status of new Swap file.'
+  become: true
+  become_method: sudo
+
