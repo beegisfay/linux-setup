@@ -7,50 +7,74 @@
 #
 # TODO: Convert to Ansible
 #
-- hosts: localhost
+- name: "Resizing Swap"
+  hosts: localhost
+  connection: local
   vars:
-  new_swap: "1"
-  new_swappiness: "50"
-
-- name: Setup additional swap space
-  block:
-  - tasks:
-    - name: Check current swap size and see if there is a need to proceed
-      shell: "swapon --show=SIZE --noheadings"
-      register: current_swap_size
-
+    new_swap: "1"
+    new_swappiness: "50"
+    new_swapfile_name: "/swapfile"
+  tasks:
     # This needs to be done before the new swapfile is created 
     # Or this code needs to be updated to filter it out
+    # TODO: Need to handle more than one existing swapfile
     - name: Get current swap file name
-      shell: "swapon --show=SIZE --noheadings"
+      shell: "swapon --show=NAME --noheadings"
       register: current_swapfile_name
 
-    - name: Set var for numeric value of current swap and fail if already <new_swap>+G
-    - set_fact:
-      current_swap_size_num: "{{ result.stdout | regex_search( '\\D', '\\1' ) }}"
-      failed_when: "current_swap_size_num >= {{ new_swap }}"
+    # TODO: Need to handle more than one existing swapfile
+    - name: Check current swap size and see if there is a need to proceed
+      shell: "swapon --show=SIZE --noheadings --bytes"
+      register: current_swapfile_size
+
+    - name: "Set var for numeric value of current swap"
+      set_fact: 
+        current_swapfile_bytes: "{{ current_swapfile_size.stdout | regex_search( qry_num ) }}"
+      vars:
+        qry_num: '[0-9]+'
 
     - debug:
-      var: current_swap_size_num
+        msg: "Current swap is [{{ current_swapfile_bytes }}] bytes"
 
+    - name: "Convert Swap File size to GB"
+      set_fact:
+        current_swapfile_gb: current_swapfile_bytes|int / 1024 / 1024
+
+    - debug:
+        msg: "Current swap is [{{ current_swapfile_gb }}] vs new swap size [{{ new_swap }}]"
+
+    - name: "Stop play if swap is already matching <new_swap>+G"
+      meta: end_play #msg="Current swap of '{{ current_swap_size_num }}G matches desired value of {{ new_swap }}G"
+      when: current_swapfile_gb == new_swap
+
+    # First action - Need to rescue later if there is an error 
+    #                Or make idempotent by ensuring there isn't an existing swap file
+    #                If there is, confirm the correct size
+    #                If not, need to turn swap off first, possibly delete and do again
     - name: Allocate amount needed to get to <new_swap>G
-      shell: "fallocate -l {{ new_swap }}G /swapfile"
+      shell: 'fallocate -l {{ new_swap }}G {{ new_swapfile_name }}'
       register: fallocate_output
 
     - name: Set Permissions for new Swap File
-      shell: chmod 600 /swapfile
+      file: 
+        path: '{{ new_swapfile_name }}'
+        owner: root
+        group: root
+        mode: '0600'
       register: chmod_output
 
     - name: Turn new swapfile into a Swap Area
-      shell: mkswap /swapfile
+      shell: mkswap {{ new_swapfile_name }}
       register: mkswap_output
 
     - name: Turn new swapfile on as swap
-      shell: swapon /swapfile
+      shell: swapon {{ new_swapfile_name }}
       register: swapon_output
 
+    # If this line already exists, due to failure after this task, 
+    # need to ensure idempotency: check for existing line first, if so remove
     - name: Put new swapfile in fstab for permanence
-      shell: "echo '/swapfile swap swap defaults 0 0' > /etc/fstab"
+      shell: "echo '{{ new_swapfile_name }} swap swap defaults 0 0' > /etc/fstab"
       register: fstab_output
 
     - name: Confirm in new swapfile size
@@ -58,31 +82,33 @@
       register: new_swapfile_confirm
 
     - debug:
-      var: new_swapfile_confirm.stdout
+        var: new_swapfile_confirm.stdout
 
     - name: Confirm Current Swapiness in Persistent File
       shell: "cat /proc/sys/vm/swappiness"
-      register: current_swappiness
+      register: current_swappiness_proc_sys
 
     - debug:
-      var: current_swappiness
+        var: current_swappiness_proc_sys.stdout
 
     - name: Determine what type of swapiness file format is on this system
-      shell: "grep 'swappiness' /proc/sys/vm/swappiness | wc -l"
+      shell: "grep 'swappiness' /proc/sys/vm/swappiness | wc -l | sed 's/^$/0/'"
       register: swappiness_line_found
-      failed_when: "swappiness_line_found > 1"
+      failed_when: swappiness_line_found.stdout != "0" and swappiness_line_found.stdout != "1"
 
     - debug:
-      var: current_swappiness
+        var: current_swappiness_proc_sys.stdout
 
     #Found this to cause my machine with 4G to become sluggish quickly (33%) and changed to go the other way (75%)
     - name: Update swappiness if not equal
       shell: sysctl vm.swappiness={{ new_swappiness }}
-      when: not current_swappiness == new_swappiness
+      when: not current_swappiness_proc_sys.stdout == new_swappiness
 
-    - Name: Determine if swappiness line exists in /etc/sysctl.conf
+    - name: Determine if swappiness line exists in /etc/sysctl.conf
       shell: "grep swappiness /etc/sysctl.conf | cut -d'=' -f2"
-      register: current_swappiness
+      register: current_swappiness_sysctl
+
+    # Need to do something with above if value exists to "replace"
 
     - name: Add new Swapiness to End of /etc/sysctl.conf
       shell: "echo vm.swappiness={{ new_swappiness }} >> /etc/sysctl.conf"
@@ -96,15 +122,15 @@
       register: both_swaps_on
 
     - debug:
-      var: both_swaps_on
+        var: both_swaps_on.stdout
 
     # Make take time to move current stuff out of swap to new swapfile
     - name: Turn off old swap
-      shell: "swapoff -v {{ current_swapfile_name }}"
+      shell: "swapoff -v {{ current_swapfile_name.stdout }}"
       register: swapoff_status
 
     - name: Remove old swap mount from permanent/boot resilience
-      shell: "cat /etc/fstab | grep -v {{ current_swapfile_name }} >! /etc/fstab"
+      shell: "cat /etc/fstab | grep -v {{ current_swapfile_name.stdout }} >! /etc/fstab"
       register: fstab_update
 
     - name: Confirm everything is moved and old swap is no longer active
@@ -112,14 +138,8 @@
       register: final_swap_check
 
     - debug:
-      var: final_swap_check
+        var: final_swap_check.stdout
 
     - name: Remove old swap mount
-      shell: "rm {{ current_swapfile_name }}"
+      shell: "rm {{ current_swapfile_name.stdout }}"
       register: remove_old_swap
-  - rescue:
-    - name: announce error
-      debug:
-        msg: 'An error occurred on the last step.  Review and address incomplete status of new Swap file.'
-  become: true
-  become_method: sudo
