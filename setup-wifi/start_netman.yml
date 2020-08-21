@@ -1,0 +1,11 @@
+---
+# This is useful after reboot when WiFi is not working
+- name: "Start Network Manager Service"
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: Start Network Manager Service
+      systemd:
+        name: network
+        state: started
+        enabled: yes

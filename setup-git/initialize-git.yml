@@ -1,0 +1,36 @@
+---
+#
+# Name: Setup Swap
+# Desc: How to increase swap on Small Systems
+# Author: Brannon Fay
+#
+- name: "Initialize Local Git"
+  hosts: localhost
+  connection: local
+  vars:
+    user_name: "my.name"
+    user_email: "my.email@sample.com"
+  tasks:
+    - name: "Set user.name"
+      git_config:
+        name: user.name
+        scope: global
+        value: '{{ user_name }}'
+
+    - name: "Set user.email"
+      git_config:
+        name: user.email
+        scope: global
+        value: '{{ user_email }}'
+
+    - name: "Set autoMerge"
+      git_config:
+        name: branch.autoSetupMerge
+        scope: global
+        value: true
+
+    - name: "Turn off Pull Rebase"
+      git_config:
+        name: pull.rebase
+        scope: global
+        value: false
