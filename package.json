@@ -20,5 +20,8 @@
   "homepage": "https://github.com/bfay/linux-setup#readme",
   "twitter": "beegisfay",
   "github": "beegisfay",
-  "linkedin": "brannonfay"
+  "linkedin": "brannonfay",
+  "dependencies": {
+    "jshint": "^2.12.0"
+  }
 }
