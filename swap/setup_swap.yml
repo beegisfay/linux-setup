@@ -1,11 +1,8 @@
 ---
 #
-#
 # Name: Setup Swap
 # Desc: How to increase swap on Small Systems
 # Author: Brannon Fay
-#
-# TODO: Convert to Ansible
 #
 - name: "Resizing Swap"
   hosts: localhost
