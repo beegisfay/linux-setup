@@ -1,4 +1,4 @@
-#!/bin/sh
+---
 #
 # Steps to make Netgear USB Wireless 6100 Driver for Ubuntu
 # After trying 2 other sets of instructions, this one worked
@@ -6,31 +6,49 @@
 # Credit goes to https://askubuntu.com/users/19421/chili555
 #
 # You may run into the WiFi not running after restarts
-# Checkout startNM.sh to remedy that
+# Checkout start_netman.yml to remedy that
 #
 # TODO: needs to be ansiblized
+- name: "Setup Netgear Wireless 6100 USB Driver"
+  connection: local
+  vars:
+    prev_driver_location: "~/Downloads/rtl8812AU"
+    new_driver_location: "~/Downloads"
+    reboot_on_complete: false
+  tasks:
+    - name: "Remove Previous Install"
+      shell: bash -lc "cd {{ prev_install_dir }} && make uninstall"
 
-#If previous drivers are installed you need to uninstall them
-#Location may differ
-cd ~/Downloads/rtl8812AU
-sudo make uninstall
-cd ..
-rm -rf rtl8812AU
+    #Now to install correct driver
+    - name: "Setup install of new Driver"
+      shell: bash -ls "cd {{ new_install_dir }} && apt update"
 
-#Now to install correct driver
-sudo apt update
-sudo apt install git
-git clone https://github.com/abperiasamy/rtl8812AU_8821AU_linux.git
-cd rtl8812AU_8821AU_linux
-make
-sudo make install
+    - name: "Ensure git is setup"
+      import_tasks: ../setup-git/initialize-git.yml
+      vars:
+        user_name: "{{ git_user_name }}"
+        user_email: "{{ git_user_email }}"
 
-#Validate new driver is loaded
-#One "alias" line should return, i.e. "alias:          usb:v0846p9052d*dc*dsc*dp*ic*isc*ip*in*"
-modinfo rtl8812au.ko | grep 9052
+    - name: "Get New Driver"
+      git: 
+        repo: "https://github.com/abperiasamy/rtl8812AU_8821AU_linux.git"
+        dest: "{{ new_install_dir }}"
+        clone: yes
+    
+    - name: "Install new driver"
+      make:
+        chdir: "rtl8812AU_8821AU_linux"
+        target: install
 
-#reboot
-#sudo restart
+    - name: "Validate new driver is loaded"
+      shell: "modinfo rtl8812au.ko | grep 9052"
+      register: modinfo_result
+    
+    - debug:
+        msg: 
+        - "One 'alias' line should return if driver successfully installed:"
+        - "[{{ modinfo_result.stdout }}]"
 
-
-
+    - name: "Reboot for new drivers to take place"
+      reboot:
+      when: reboot_on_complete == true
