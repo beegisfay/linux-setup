@@ -26,7 +26,7 @@ Write-Verbose "WSL [$WSL]"
 
 $found = $WSL -match '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}';
 if (-not $found) {
-  echo "WSL2 cannot be found. Terminate script.";
+  Write-Output "WSL2 cannot be found. Terminate script.";
   exit;
 }
 
@@ -43,9 +43,9 @@ if ($Args[0] -ne "delete") {
 #$Addr = "0.0.0.0"
 $Addr = Get-NetIPConfiguration -InterfaceAlias "Wi-Fi 2" -Verbose | Select-Object IPv4Address
 Foreach ($Port in $Ports) {
-    iex "netsh interface portproxy delete v4tov4 listenaddress=$Addr listenport=$Port | Out-Null";
+    Invoke-Expression "netsh interface portproxy delete v4tov4 listenaddress=$Addr listenport=$Port | Out-Null";
     if ($Args[0] -ne "delete") {
-        iex "netsh interface portproxy add v4tov4 listenaddress=$Addr listenport=$Port connectaddress=$WSL connectport=$Port | Out-Null";
+        Invoke-Expression "netsh interface portproxy add v4tov4 listenaddress=$Addr listenport=$Port connectaddress=$WSL connectport=$Port | Out-Null";
     }
 }
 
