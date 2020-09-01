@@ -1,7 +1,7 @@
 ---
 #
-# Name: Setup Swap
-# Desc: How to increase swap on Small Systems
+# Name: Initialize Git
+# Desc: Install Git and setup basic global config parameters 
 # Author: Brannon Fay
 #
 - name: "Initialize Local Git"
@@ -11,6 +11,11 @@
     user_name: "my.name"
     user_email: "my.email@sample.com"
   tasks:
+    - name: "Updates Repositories and Install Git"
+      apt:
+        name: git
+        update_cache: yes
+
     - name: "Set user.name"
       git_config:
         name: user.name
