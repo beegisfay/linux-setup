@@ -1,12 +1,12 @@
-#$remoteport = bash.exe -c "ifconfig eth0 | grep 'inet '"
-$reportport = bash.exe -c "ip addr | grep -Ee 'inet.*eth0'"
-#$remoteport = "172.30.216.220"
-$found = $remoteport -match '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}';
+#$remote_addr = bash.exe -c "ifconfig eth0 | grep 'inet '"
+$remote_addr = bash.exe -c "ip addr | grep -Ee 'inet.*eth0'"
+#$remote_ip = "172.30.216.220"
+$found = $remote_addr -match '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}';
 
 if( $found ){
-  $remoteport = $matches[0];
+  $remote_addr = $matches[0];
 } else{
-  echo "The Script Exited, the ip address of WSL 2 cannot be found";
+  Write-Output "The Script Exited, the ip address of WSL 2 cannot be found";
   exit;
 }
 
@@ -23,14 +23,18 @@ $ports_a = $ports -join ",";
 
 
 #Remove Firewall Exception Rules
-iex "Remove-NetFireWallRule -DisplayName 'WSL 2 Firewall Unlock' ";
+Remove-NetFireWallRule -DisplayName 'WSL 2 Firewall Unlock'
 
 #adding Exception Rules for inbound and outbound Rules
-iex "New-NetFireWallRule -DisplayName 'WSL 2 Firewall Unlock' -Direction Outbound -LocalPort $ports_a -Action Allow -Protocol TCP";
-iex "New-NetFireWallRule -DisplayName 'WSL 2 Firewall Unlock' -Direction Inbound -LocalPort $ports_a -Action Allow -Protocol TCP";
+New-NetFireWallRule -DisplayName 'WSL 2 Firewall Unlock' -Direction Outbound -LocalPort $ports_a -Action Allow -Protocol TCP;
+New-NetFireWallRule -DisplayName 'WSL 2 Firewall Unlock' -Direction Inbound -LocalPort $ports_a -Action Allow -Protocol TCP;
 
 for( $i = 0; $i -lt $ports.length; $i++ ){
   $port = $ports[$i];
-  iex "netsh interface portproxy delete v4tov4 listenport=$port listenaddress=$addr";
-  iex "netsh interface portproxy add v4tov4 listenport=$port listenaddress=$addr connectport=$port connectaddress=$remoteport";
+  #delete v4tov4 listenport=$port listenaddress=$addr
+  Stop-SSHPortForward -BoundPort $port -BoundHost $addr
+  #Invoke-Expression "netsh interface portproxy delete v4tov4 listenport=$port listenaddress=$addr";
+  
+  New-SSHRemotePortForward -LocalAdress $addr -LocalPort $port -RemoteAddress $remote_ip -RemotePort $port
+  #Invoke-Expression "netsh interface portproxy add v4tov4 listenport=$port listenaddress=$addr connectport=$port connectaddress=$remoteport";
 }
