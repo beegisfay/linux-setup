@@ -3,12 +3,11 @@
 # Steps to make Netgear USB Wireless 6100 Driver for Ubuntu
 # After trying 2 other sets of instructions, this one worked
 # Thread: https://askubuntu.com/questions/1027094/netgear-a6100-ac600-wifi-adapter-driver
-# Credit goes to https://askubuntu.com/users/19421/chili555
+# Credit: https://askubuntu.com/users/19421/chili555
 #
 # You may run into the WiFi not running after restarts
 # Checkout start_netman.yml to remedy that
 #
-# TODO: needs to be ansiblized
 - name: "Setup Netgear Wireless 6100 USB Driver"
   connection: local
   vars:
