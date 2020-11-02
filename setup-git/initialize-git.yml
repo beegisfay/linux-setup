@@ -3,6 +3,8 @@
 # Name: Initialize Git
 # Desc: Install Git and setup basic global config parameters 
 # Author: Brannon Fay
+# 
+# Example Execution: ansible-playbook initialize-git.yml --extra-vars "user_name='Brannon Fay' user_email=brannon.fay@gmail.com" --ask-become-pass
 #
 - name: "Initialize Local Git"
   hosts: localhost
@@ -14,7 +16,8 @@
     - name: "Updates Repositories and Install Git"
       apt:
         name: git
-        update_cache: yes
+        update_cache: true
+      become: yes
 
     - name: "Set user.name"
       git_config:
@@ -32,10 +35,10 @@
       git_config:
         name: branch.autoSetupMerge
         scope: global
-        value: true
+        value: True
 
     - name: "Turn off Pull Rebase"
       git_config:
         name: pull.rebase
         scope: global
-        value: false
+        value: False
